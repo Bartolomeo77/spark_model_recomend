@@ -1,0 +1,25 @@
+version: '3'
+
+services:
+  spark-worker:
+    container_name: spark-worker3
+    image: billalmiron/cluster-db:latest
+    ports:
+      - "9095:8085"                                 
+    environment:
+      - SPARK_MASTER=spark://192.168.0.8:7077
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=2G
+      - SPARK_DRIVER_MEMORY=2G
+      - SPARK_EXECUTOR_MEMORY=2G
+      - SPARK_WORKLOAD=worker
+      - SPARK_LOCAL_IP=spark-worker
+    volumes:
+      - ./apps:/opt/spark-apps
+      - ./data:/opt/spark-data
+      - ./models:/opt/spark-models
+    networks:
+      - pruebafinal_spark-network
+networks:
+  pruebafinal_spark-network:
+    external: true

@@ -1,0 +1,92 @@
+version: '3'
+
+services:
+  spark-master:
+    image: billalmiron/spark-proyect2:latest
+    ports:
+      - "9090:8080"
+      - "7077:7077"
+    volumes:
+      - ./apps:/opt/spark-apps
+      - ./data:/opt/spark-data
+      - ./models:/opt/spark-models
+    environment:
+      - SPARK_LOCAL_IP=spark-master
+      - SPARK_WORKLOAD=master
+    networks:
+      - spark-network
+
+  spark-worker-a:
+    image: billalmiron/spark-proyect2:latest
+    ports:
+      - "9091:8080"
+      - "7000:7000"
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=2G
+      - SPARK_DRIVER_MEMORY=2G
+      - SPARK_EXECUTOR_MEMORY=2G
+      - SPARK_WORKLOAD=worker
+      - SPARK_LOCAL_IP=spark-worker-a
+    volumes:
+      - ./apps:/opt/spark-apps
+      - ./data:/opt/spark-data
+      - ./models:/opt/spark-models
+    networks:
+      - spark-network
+
+  spark-worker-b:
+    image: billalmiron/spark-proyect2:latest
+    ports:
+      - "9092:8080"
+      - "7001:7000"
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=2G
+      - SPARK_DRIVER_MEMORY=2G
+      - SPARK_EXECUTOR_MEMORY=2G
+      - SPARK_WORKLOAD=worker
+      - SPARK_LOCAL_IP=spark-worker-b
+    volumes:
+        - ./apps:/opt/spark-apps
+        - ./data:/opt/spark-data
+        - ./models:/opt/spark-models
+    networks:
+      - spark-network
+
+  demo-database:
+    image: postgres:11.7-alpine
+    ports: 
+      - "5432:5432"
+    environment: 
+      - POSTGRES_PASSWORD=casa1234
+    networks:
+      - spark-network
+
+  spark-app:
+    image: billalmiron/spark-proyect2:latest # Utiliza la imagen de tu aplicación Spark
+    depends_on:
+      - spark-master
+    volumes:
+      - ./apps:/opt/spark-apps
+      - ./data:/opt/spark-data
+      - ./models:/opt/spark-models  # Ajusta la ruta según la estructura de tu directorio
+    command: "/opt/spark/bin/spark-submit \
+              --master spark://spark-master:7077 \
+              --jars /opt/spark-apps/postgresql-42.2.22.jar \
+              /opt/spark-apps/app.py
+            "
+    ports:
+      - "5000:5000"  # Exponer el puerto 5000 para Flask
+    networks:
+      - spark-network
+
+networks:
+  spark-network:
+    driver: bridge
